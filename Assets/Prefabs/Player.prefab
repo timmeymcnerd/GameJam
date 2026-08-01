@@ -232,7 +232,7 @@ MonoBehaviour:
   wallRunSticky: 1
   layerMask:
     serializedVersion: 2
-    m_Bits: 4294967295
+    m_Bits: 55
   groundCastDistance: 0.1
   movementCastDistance: 0.1
   movementCastHeightOffset: 0.1
