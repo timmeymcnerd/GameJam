@@ -21,6 +21,8 @@ public class CharacterController : MonoBehaviour
     public float wallRunMaxClimbRate = 3f;
     public float wallRunMaxSinkRate = 5f;
     public float wallJumpForce = 1f;
+    public float wallRunReflectCollisionThreshold = 1f;
+    public float wallRunReflectCollisionDamping = 0.75f;
     public float graplingHookCooldown = 10f;
 
     [Space]
@@ -41,18 +43,20 @@ public class CharacterController : MonoBehaviour
     private float wallJumpTimer;
     private float graplingHookTimer;
     private float ungroundedTimer;
+    private Vector3 previousVelocity;
 
     private Vector3 Velocity => this.rigidbody.linearVelocity;
     private Vector3 GroundVelocity => this.rigidbody.linearVelocity.SetComponent(Axis.Y, 0);
     private Vector3 RestVelocity => this.GroundRigidbody != null ? this.GroundRigidbody.linearVelocity : Vector3.zero;
     private float GroundSpeed => this.Velocity.SetComponent(Axis.Y, 0).magnitude;
+
     private bool Grounded { get; set; }    
     private Vector3 GroundPosition { get; set; }
     private Vector3 GroundNormal { get; set; }    
     private Rigidbody GroundRigidbody { get; set; }
     private bool Walled { get; set; }
     private Vector3 WallDriection { get; set; }
-
+    
     public void Unground(float duration)
     {
         this.ungroundedTimer = Mathf.Max(this.ungroundedTimer, duration);
@@ -66,6 +70,8 @@ public class CharacterController : MonoBehaviour
         this.CollisionCheck();
         this.Look();
         this.Move();
+
+        this.previousVelocity = this.Velocity;
     }
 
     private void UpdateTimers()
@@ -235,6 +241,16 @@ public class CharacterController : MonoBehaviour
 
     private void WallMovement()
     {
+        float deceleration = this.previousVelocity.magnitude - this.Velocity.magnitude;
+        
+        if (deceleration > this.wallRunReflectCollisionThreshold)
+        {
+            float sign = Mathf.Sign(Vector3.SignedAngle(this.previousVelocity, this.WallDriection, Vector3.up));
+            Vector3 wallRunDirection = sign * Vector3.Cross(this.WallDriection, Vector3.up);
+
+            this.rigidbody.linearVelocity += this.wallRunReflectCollisionDamping * deceleration * wallRunDirection;
+        }
+
         if (this.GroundSpeed < this.wallRunMinimumSpeed)
         {
             return;

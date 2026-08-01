@@ -225,16 +225,18 @@ MonoBehaviour:
   head: {fileID: 5143495543533759058}
   mouseSensitivity: 40
   suspendMouseLook: 0.1
-  movementSpeed: 6
+  movementSpeed: 6.5
   jumpForce: 5
   jumpCooldown: 0.25
-  airborneAcceleration: 5
+  airborneAcceleration: 10
   wallRunMinimumSpeed: 3
   wallRunSnapForce: 1
   wallRunPitchControl: 8
   wallRunMaxClimbRate: 3
   wallRunMaxSinkRate: 5
   wallJumpForce: 5
+  wallRunReflectCollisionThreshold: 1
+  wallRunReflectCollisionDamping: 0.75
   graplingHookCooldown: 10
   layerMask:
     serializedVersion: 2
