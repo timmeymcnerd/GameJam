@@ -226,7 +226,7 @@ MonoBehaviour:
   mouseSensitivity: 40
   suspendMouseLook: 0.1
   movementSpeed: 6.5
-  jumpForce: 5
+  jumpForce: 6
   jumpCooldown: 0.25
   airborneAcceleration: 10
   wallRunMinimumSpeed: 3
@@ -234,7 +234,7 @@ MonoBehaviour:
   wallRunPitchControl: 8
   wallRunMaxClimbRate: 3
   wallRunMaxSinkRate: 5
-  wallJumpForce: 5
+  wallJumpForce: 6
   wallRunReflectCollisionThreshold: 1
   wallRunReflectCollisionDamping: 0.75
   graplingHookCooldown: 10
