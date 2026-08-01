@@ -1,13 +1,5 @@
 using System;
 using UnityEngine;
-using UnityEngine.Animations;
-using UnityEngine.InputSystem;
-using static UnityEngine.Rendering.DebugUI;
-
-public enum Axis 
-{ 
-    X, Y, Z
-}
 
 public class CharacterController : MonoBehaviour
 {
@@ -188,9 +180,12 @@ public class CharacterController : MonoBehaviour
 
         Vector3 movement = this.moveInput.y * forward + this.moveInput.x * right;
         Vector3 normalizedMovement = this.moveInput != Vector2.zero ? movement.normalized : Vector3.zero;
-        
-        this.rigidbody.linearVelocity = this.GroundVelocity + normalizedMovement * this.movementSpeed;
-        
+                 
+        Vector3 targetVelocity = this.GroundVelocity + normalizedMovement * this.movementSpeed;
+        targetVelocity.y = this.Velocity.y;
+
+        this.rigidbody.linearVelocity = targetVelocity;
+
         float time = Time.time;
 
         if (this.Grounded && this.jump && time - this.lastJumpTime > this.jumpCooldown)
