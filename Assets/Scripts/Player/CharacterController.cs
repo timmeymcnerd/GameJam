@@ -9,12 +9,14 @@ public class CharacterController : MonoBehaviour
 
     [Space]
     public float mouseSensitivity = 1f;
+    public float suspendMouseLook = 1f;
     public float movementSpeed = 5.0f;
     public float jumpForce = 1f;
+    public float jumpCooldown = 0.25f;
     public float airborneAcceleration = 1f;
     public float wallRunMinimumSpeed = 1f;
-    public float wallRunUp = 1f;
-    public float wallRunSticky = 1f;
+    public float wallRunSnapForce = 1f;
+    public float graplingHookCooldown = 10f;
 
     [Space]
     public LayerMask layerMask = ~0;
@@ -24,18 +26,18 @@ public class CharacterController : MonoBehaviour
     public float maxGroundAngle = 10f;
     public float maxWallAngle = 10f;
 
-    [Space]
-    public float jumpCooldown = 0.25f;
-
     private Vector2 lookInput;
     private Vector2 moveInput;
-    private bool jump;
+    private bool jumpInput;
+    private bool graplingHookInput;
 
     private Vector3? previousMousePosition;
     private float lastJumpTime;
+    private float lastGrapplingHookTime;
 
     private Vector3 Velocity => this.rigidbody.linearVelocity;
-    private Vector3 GroundVelocity => this.GroundRigidbody != null ? this.GroundRigidbody.linearVelocity : Vector3.zero;
+    private Vector3 GroundVelocity => this.rigidbody.linearVelocity.SetComponent(Axis.Y, 0);
+    private Vector3 RestVelocity => this.GroundRigidbody != null ? this.GroundRigidbody.linearVelocity : Vector3.zero;
     private float GroundSpeed => this.Velocity.SetComponent(Axis.Y, 0).magnitude;
     private bool Grounded { get; set; }
     private bool Walled { get; set; }
@@ -68,7 +70,7 @@ public class CharacterController : MonoBehaviour
 
         this.moveInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
 
-        this.jump = Input.GetKey(KeyCode.Space);
+        this.jumpInput = Input.GetKey(KeyCode.Space);
     }
 
     private void CollisionCheck()
@@ -158,6 +160,11 @@ public class CharacterController : MonoBehaviour
 
     private void Look()
     {
+        if (Time.time < this.suspendMouseLook)
+        {
+            return;
+        }
+
         this.transform.Rotate(new Vector3(0, this.lookInput.x * Time.deltaTime, 0), Space.World);
         this.head.Rotate(new Vector3(this.lookInput.y * Time.deltaTime, 0, 0), Space.Self);
     }
@@ -189,14 +196,14 @@ public class CharacterController : MonoBehaviour
         Vector3 movement = this.moveInput.y * forward + this.moveInput.x * right;
         Vector3 normalizedMovement = this.moveInput != Vector2.zero ? movement.normalized : Vector3.zero;
                  
-        Vector3 targetVelocity = this.GroundVelocity + normalizedMovement * this.movementSpeed;
+        Vector3 targetVelocity = this.RestVelocity + normalizedMovement * this.movementSpeed;
         targetVelocity.y = this.Velocity.y;
 
         this.rigidbody.linearVelocity = targetVelocity;
 
         float time = Time.time;
 
-        if (this.Grounded && this.jump && time - this.lastJumpTime > this.jumpCooldown)
+        if (this.Grounded && this.jumpInput && time - this.lastJumpTime > this.jumpCooldown)
         {
             this.lastJumpTime = time;
             this.rigidbody.AddForce(Vector3.up * this.jumpForce, ForceMode.Impulse);
@@ -211,7 +218,7 @@ public class CharacterController : MonoBehaviour
         }
 
         this.rigidbody.linearVelocity = this.rigidbody.linearVelocity.SetComponent(Axis.Y, 0);
-        this.rigidbody.AddForce(this.WallDriection * this.wallRunSticky, ForceMode.Force);
+        this.rigidbody.AddForce(this.WallDriection * this.wallRunSnapForce, ForceMode.Force);
     }
 
     private void AirborneMovement()
@@ -224,6 +231,27 @@ public class CharacterController : MonoBehaviour
 
         Vector3 acceleration = normalizedMovement * this.airborneAcceleration;
 
-        this.rigidbody.linearVelocity += acceleration * Time.deltaTime;
+        Quaternion heading = Quaternion.Euler(0, this.transform.eulerAngles.y, 0);
+        Quaternion inverseHeading = Quaternion.Inverse(heading);
+
+        Vector3 velocity = this.rigidbody.linearVelocity;
+        Vector3 targetVelocity = velocity + acceleration * Time.deltaTime;
+
+        Vector3 localVelocity = inverseHeading * velocity;
+        Vector3 localTargetVelocity = inverseHeading * targetVelocity;
+
+        if (Mathf.Abs(localTargetVelocity.x) > this.movementSpeed)
+        {
+            localTargetVelocity.x = localVelocity.x;
+        }
+
+        if (Mathf.Abs(localTargetVelocity.z) > this.movementSpeed)
+        {
+            localTargetVelocity.z = localVelocity.z;
+        }
+
+        targetVelocity = heading * localTargetVelocity;
+
+        this.rigidbody.linearVelocity = targetVelocity;
     }
 }

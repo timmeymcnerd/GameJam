@@ -224,21 +224,22 @@ MonoBehaviour:
   capsuleCollider: {fileID: 6009152517010710027}
   head: {fileID: 5143495543533759058}
   mouseSensitivity: 40
+  suspendMouseLook: 0.1
   movementSpeed: 6
   jumpForce: 5
+  jumpCooldown: 0.1
   airborneAcceleration: 5
   wallRunMinimumSpeed: 3
-  wallRunUp: 1
-  wallRunSticky: 1
+  wallRunSnapForce: 1
+  graplingHookCooldown: 10
   layerMask:
     serializedVersion: 2
     m_Bits: 55
   groundCastDistance: 0.1
   movementCastDistance: 0.1
   movementCastHeightOffset: 0.1
-  maxGroundAngle: 10
+  maxGroundAngle: 30
   maxWallAngle: 10
-  jumpCooldown: 0.1
 --- !u!1 &8782455285130722761
 GameObject:
   m_ObjectHideFlags: 0
