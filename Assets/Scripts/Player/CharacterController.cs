@@ -9,6 +9,7 @@ public class CharacterController : MonoBehaviour
 
     [Space]
     public float mouseSensitivity = 1f;
+    private float lookPitchRange = 80f;
     public float suspendMouseLook = 1f;
     public float movementSpeed = 5.0f;
     public float jumpForce = 1f;
@@ -16,6 +17,10 @@ public class CharacterController : MonoBehaviour
     public float airborneAcceleration = 1f;
     public float wallRunMinimumSpeed = 1f;
     public float wallRunSnapForce = 1f;
+    public float wallRunPitchControl = 1f;
+    public float wallRunMaxClimbRate = 3f;
+    public float wallRunMaxSinkRate = 5f;
+    public float wallJumpForce = 1f;
     public float graplingHookCooldown = 10f;
 
     [Space]
@@ -32,35 +37,45 @@ public class CharacterController : MonoBehaviour
     private bool graplingHookInput;
 
     private Vector3? previousMousePosition;
-    private float lastJumpTime;
-    private float lastGrapplingHookTime;
+    private float jumpTimer;
+    private float wallJumpTimer;
+    private float graplingHookTimer;
+    private float ungroundedTimer;
 
     private Vector3 Velocity => this.rigidbody.linearVelocity;
     private Vector3 GroundVelocity => this.rigidbody.linearVelocity.SetComponent(Axis.Y, 0);
     private Vector3 RestVelocity => this.GroundRigidbody != null ? this.GroundRigidbody.linearVelocity : Vector3.zero;
     private float GroundSpeed => this.Velocity.SetComponent(Axis.Y, 0).magnitude;
-    private bool Grounded { get; set; }
-    private bool Walled { get; set; }
-    private Vector3 GroundNormal { get; set; }
-    private Vector3 WallDriection { get; set; }
+    private bool Grounded { get; set; }    
+    private Vector3 GroundPosition { get; set; }
+    private Vector3 GroundNormal { get; set; }    
     private Rigidbody GroundRigidbody { get; set; }
-
-    private float ungroundedUntil;
+    private bool Walled { get; set; }
+    private Vector3 WallDriection { get; set; }
 
     public void Unground(float duration)
     {
-        float ungroundedUntil = Time.time + duration;
-
-        this.ungroundedUntil = Mathf.Max(this.ungroundedUntil, ungroundedUntil);
+        this.ungroundedTimer = Mathf.Max(this.ungroundedTimer, duration);
     }
 
     // Update is called once per frame
     void FixedUpdate()
     {
+        this.UpdateTimers();
         this.GetInput();
         this.CollisionCheck();
         this.Look();
         this.Move();
+    }
+
+    private void UpdateTimers()
+    {
+        float deltaTime = Time.deltaTime;
+
+        this.jumpTimer = Mathf.Max(0, this.jumpTimer - deltaTime);
+        this.wallJumpTimer = Mathf.Max(0, this.wallJumpTimer - deltaTime);
+        this.ungroundedTimer = Mathf.Max(0, this.ungroundedTimer - deltaTime);
+        this.graplingHookTimer = Mathf.Max(0, this.graplingHookTimer - deltaTime);        
     }
 
     private void GetInput()
@@ -85,12 +100,13 @@ public class CharacterController : MonoBehaviour
         RaycastHit? groundHit = this.GetGroundHit(groundCast);
         RaycastHit? wallHit = this.GetWallHit(movementCast);
 
-        this.GroundRigidbody = groundHit.HasValue ? groundHit.Value.rigidbody : null;
+        this.Grounded = this.ungroundedTimer <= 0 && groundHit != null;
+        this.GroundPosition = groundHit.HasValue ? groundHit.Value.point : this.transform.position;
         this.GroundNormal = groundHit.HasValue ? groundHit.Value.normal : Vector3.up;
-        this.WallDriection = wallHit.HasValue ? this.GroundDirection(wallHit.Value.point) : Vector3.zero;
+        this.GroundRigidbody = groundHit.HasValue ? groundHit.Value.rigidbody : null;
 
-        this.Grounded = Time.time > this.ungroundedUntil && groundHit != null;
         this.Walled = wallHit != null;
+        this.WallDriection = wallHit.HasValue ? this.GroundDirection(wallHit.Value.point) : Vector3.zero;
     }
 
     private Vector3 GroundDirection(Vector3 point)
@@ -166,7 +182,14 @@ public class CharacterController : MonoBehaviour
         }
 
         this.transform.Rotate(new Vector3(0, this.lookInput.x * Time.deltaTime, 0), Space.World);
-        this.head.Rotate(new Vector3(this.lookInput.y * Time.deltaTime, 0, 0), Space.Self);
+
+        float headPitch = this.head.localEulerAngles.x;
+        headPitch = headPitch > 180 ? headPitch - 360 : headPitch;
+        headPitch += this.lookInput.y * Time.deltaTime;
+
+        headPitch = Mathf.Clamp(headPitch, -this.lookPitchRange, this.lookPitchRange);
+
+        this.head.localEulerAngles = this.head.localEulerAngles.SetComponent(Axis.X, headPitch);
     }
 
     private void Move()
@@ -201,11 +224,11 @@ public class CharacterController : MonoBehaviour
 
         this.rigidbody.linearVelocity = targetVelocity;
 
-        float time = Time.time;
-
-        if (this.Grounded && this.jumpInput && time - this.lastJumpTime > this.jumpCooldown)
+        if (this.jumpInput && this.jumpTimer <= 0)
         {
-            this.lastJumpTime = time;
+            this.jumpTimer = this.jumpCooldown;
+
+            this.rigidbody.linearVelocity = this.GroundVelocity;
             this.rigidbody.AddForce(Vector3.up * this.jumpForce, ForceMode.Impulse);
         }        
     }
@@ -217,12 +240,36 @@ public class CharacterController : MonoBehaviour
             return;
         }
 
-        this.rigidbody.linearVelocity = this.rigidbody.linearVelocity.SetComponent(Axis.Y, 0);
+        if (this.jumpInput && this.jumpTimer <= 0)
+        {
+            this.rigidbody.AddForce(this.wallJumpForce * (Vector3.up - this.WallDriection), ForceMode.Impulse);
+            this.wallJumpTimer = this.jumpCooldown;
+            this.jumpTimer = this.jumpCooldown;
+
+            return;
+        }
+
+        if (this.wallJumpTimer > 0)
+        {
+            return;
+        }
+
+        float pitch = this.head.localEulerAngles.x;
+        pitch = pitch > 180 ? 360 - pitch : -pitch;
+
+        float climbRate = Mathf.Clamp(this.wallRunPitchControl * pitch / 90, -this.wallRunMaxSinkRate, this.wallRunMaxClimbRate);
+
+        this.rigidbody.linearVelocity = this.Velocity.SetComponent(Axis.Y, climbRate);
         this.rigidbody.AddForce(this.WallDriection * this.wallRunSnapForce, ForceMode.Force);
     }
 
     private void AirborneMovement()
     {
+        if (this.wallJumpTimer > 0)
+        {
+            return;
+        }
+
         Vector3 forward = Quaternion.Euler(0, this.transform.eulerAngles.y, 0) * Vector3.forward;
         Vector3 right = this.transform.right;
 

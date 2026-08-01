@@ -227,10 +227,14 @@ MonoBehaviour:
   suspendMouseLook: 0.1
   movementSpeed: 6
   jumpForce: 5
-  jumpCooldown: 0.1
+  jumpCooldown: 0.25
   airborneAcceleration: 5
   wallRunMinimumSpeed: 3
   wallRunSnapForce: 1
+  wallRunPitchControl: 8
+  wallRunMaxClimbRate: 3
+  wallRunMaxSinkRate: 5
+  wallJumpForce: 5
   graplingHookCooldown: 10
   layerMask:
     serializedVersion: 2
