@@ -492,7 +492,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1eef77f545773bd4ab443203dc124de2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::JumpPad
-  resetVelocity: 1
+  resetVerticalVelocity: 1
+  lateralVelocityScale: 0.25
+  ungroundDuration: 0.5
   force: 12
 --- !u!4 &8995817132846739635 stripped
 Transform:

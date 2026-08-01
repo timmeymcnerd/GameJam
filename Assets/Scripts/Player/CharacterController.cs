@@ -43,6 +43,14 @@ public class CharacterController : MonoBehaviour
     private Vector3 WallDriection { get; set; }
     private Rigidbody GroundRigidbody { get; set; }
 
+    private float ungroundedUntil;
+
+    public void Unground(float duration)
+    {
+        float ungroundedUntil = Time.time + duration;
+
+        this.ungroundedUntil = Mathf.Max(this.ungroundedUntil, ungroundedUntil);
+    }
 
     // Update is called once per frame
     void FixedUpdate()
@@ -79,7 +87,7 @@ public class CharacterController : MonoBehaviour
         this.GroundNormal = groundHit.HasValue ? groundHit.Value.normal : Vector3.up;
         this.WallDriection = wallHit.HasValue ? this.GroundDirection(wallHit.Value.point) : Vector3.zero;
 
-        this.Grounded = groundHit != null;
+        this.Grounded = Time.time > this.ungroundedUntil && groundHit != null;
         this.Walled = wallHit != null;
     }
 
@@ -218,5 +226,4 @@ public class CharacterController : MonoBehaviour
 
         this.rigidbody.linearVelocity += acceleration * Time.deltaTime;
     }
-
 }

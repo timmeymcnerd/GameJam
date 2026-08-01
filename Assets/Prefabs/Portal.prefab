@@ -46,7 +46,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1eef77f545773bd4ab443203dc124de2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ApplyImpulse
-  resetVelocity: 0
+  resetVerticalVelocity: 0
+  lateralVelocityScale: 0.5
+  ungroundDuration: -1
   force: 10
 --- !u!1 &3144913542995958541
 GameObject:
